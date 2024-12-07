@@ -4,3 +4,6 @@
 
 * 目前比较奇怪的事情有：
     * 性能要求中要求适配uint8，但我看别人写的都是int8，到时候如果报错可能需要重新生成算子工程（我这里写的是uint8）
+
+
+* 可以参考的项目有sample里的`归档\samples\operator_contrib\UnalignAddCustomSample`这个，这是一个非对其add的实现
