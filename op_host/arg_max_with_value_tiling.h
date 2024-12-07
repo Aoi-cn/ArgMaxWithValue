@@ -8,9 +8,12 @@ BEGIN_TILING_DATA_DEF(ArgMaxWithValueTilingData){
   TILING_DATA_FIELD_DEF(uint32_t, lz);
   TILING_DATA_FIELD_DEF(uint32_t, dim);
   TILING_DATA_FIELD_DEF(uint32_t, dimNum);
-  
-  TILING_DATA_FIELD_DEF(uint32_t, blockNum);  //数据占有的block个数
-  TILING_DATA_FIELD_DEF(uint32_t, ubSize);  //UB大小
+  TILING_DATA_FIELD_DEF(uint32_t, tileDataNum);
+  TILING_DATA_FIELD_DEF(uint32_t, tileNum);
+  TILING_DATA_FIELD_DEF(uint32_t, tailLength);
+  TILING_DATA_FIELD_DEF(uint32_t, stride);
+  // TILING_DATA_FIELD_DEF(uint32_t, blockNum);  //数据占有的block个数
+  // TILING_DATA_FIELD_DEF(uint32_t, ubSize);  //UB大小
 
   //保留大小核优化
   // TILING_DATA_FIELD_DEF(uint32_t, smallCoreDataNum);  //小核的数据总量  16x10=160

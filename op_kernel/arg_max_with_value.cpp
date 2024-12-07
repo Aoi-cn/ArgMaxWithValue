@@ -4,17 +4,22 @@ template<typename TYPE_X,typename TYPE_Y,typename TYPE_Z> class KernelSArg {
 public:
     __aicore__ inline KernelArg() {}
     __aicore__ inline void Init(GM_ADDR x,GM_ADDR indice,GM_ADDR values,uint32_t lx,uint32_t ly,uint32_t lz,
-                                uint32_t blockNum,uint32_t ubSize/* 开发者填充参数列表 */)
+                                uint32_t dim,uint32_t dimNum,uint32_t tileDataNum,uint32_t tileNum,uint32_t tailLength,uint32_t stride/* 开发者填充参数列表 */)
     {
         //考生补充初始化代码
         ASSERT(GetBlockNum()!=0&&"block dim can not be zero!");
         this->lx=lx;
         this->ly=ly;
         this->lz=lz;
-        this->blockNum=blockNum;
-        this->ubSize=ubSize;
-        this->blockLength=lx*ly*lz;
-        // this->tileNum=tileNum;
+        
+        this->dim=dim;
+        this->dimNum=dimNum;
+        this->dataNum=lx*ly*lz;
+
+        this->tileDataNum=tileDataNum;
+        this->tileNum=tileNum;
+        this->tailLength=tailLength;
+        this->stride=stride;
         // ASSERT(tileNum!=0&&"tile num can not be zero!");
         // this->tileLength=this->blockLength/tileNum/BUFFER_NUM;
 
@@ -22,38 +27,35 @@ public:
         // xGm.SetGlobalBuffer((__gm__ TYPE_X*)x+this->blockLength*GetBlockIdx(),this->blockLength);
         // yGm.SetGlobalBuffer((__gm__ TYPE_Y*)y+this->blockLength*GetBlockIdx(),this->blockLength);
         
-        xGm.SetGlobalBuffer((__gm__ TYPE_X*)x,this->blockLength);
+        xGm.SetGlobalBuffer((__gm__ TYPE_X*)x,this->dataNum);
         if(this->dim==0){
-            this->dimNum=this->lx;
-            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->blockLength/this->lx);
-            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->blockLength/this->lx);
+            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->dataNum/this->lx);
+            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->dataNum/this->lx);
         }
         else if(this->dim==1){
-            this->dimNum=this->ly;
-            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->blockLength/this->ly);
-            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->blockLength/this->ly);
+            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->dataNum/this->ly);
+            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->dataNum/this->ly);
         }
         else{
-            this->dimNum=this->lz;
-            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->blockLength/this->lz);
-            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->blockLength/this->lz);
+            indiceGm.SetGlobalBuffer((__gm__ TYPE_Y*)indice,this->dataNum/this->lz);
+            valuesGm.SetGlobalBuffer((__gm__ TYPE_Z*)values,this->dataNum/this->lz);
         }
 
 
-        pipe.InitBuffer(inQueueX,BUFFER_NUM,this->tileLength*sizeof(TYPE_X));
-        pipe.InitBuffer(outQueueY,BUFFER_NUM,this->tileLength*sizeof(TYPE_Y));
-        pipe.InitBuffer(tmpBuffer1,this->tileLength*sizeof(TYPE_X));
-        pipe.InitBuffer(tmpBuffer2,this->tileLength*sizeof(TYPE_X));
-        pipe.InitBuffer(tmpBuffer3,this->tileLength*sizeof(TYPE_X));
-        pipe.InitBuffer(tmpBuffer4,this->tileLength*sizeof(TYPE_X));
-        uint32_t ubDataNumber=(sizeof(TYPE_X)==1)?4:3;  //对int8的处理
-        this->tileBlockNum=(this->ubSize/)
+        pipe.InitBuffer(inQueueX,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_X));
+        pipe.InitBuffer(outQueueY,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_Y));
+        pipe.InitBuffer(tmpBuffer1,this->tileDataNum*sizeof(TYPE_X));
+        pipe.InitBuffer(tmpBuffer2,this->tileDataNum*sizeof(TYPE_X));
+        pipe.InitBuffer(tmpBuffer3,this->tileDataNum*sizeof(TYPE_X));
+        pipe.InitBuffer(tmpBuffer4,this->tileDataNum*sizeof(TYPE_X));
         
     }
     __aicore__ inline void Process()
     {
         //考生补充对“loopCount”的定义，注意对Tiling的处理
-        int32_t loopCount=this->tileNum*BUFFER_NUM;
+
+        int32_t loopCount1=this->this->lx*this->ly*this->lz/this->dimNum;
+        int32_t loopCount2=this->tileNum*BUFFER_NUM;
         for (int32_t i = 0; i < loopCount; i++) {
             CopyIn(i);
             Compute(i);
@@ -112,11 +114,14 @@ private:
     uint32_t lx;
     uint32_t ly;
     uint32_t lz;
-    uint32_t blockNum;
-    uint32_t ubSize;
-    uint32_t blockLength;
+
+    uint32_t dataNum;   //数据总数
     uint32_t dim;
     uint32_t dimNum;    //目标维数上的长度
+    uint32_t tileDataNum;
+    uint32_t tileNum;
+    uint32_t tailLength;
+    uint32_t stride;
     // uint32_t tileNum;
     // uint32_t tileLength;
 };
@@ -124,6 +129,7 @@ extern "C" __global__ __aicore__ void arg_max_with_value(GM_ADDR x, GM_ADDR indi
     GET_TILING_DATA(tiling_data, tiling);
     // TODO: user kernel impl
     KernelSArg<DTYPE_X, DTYPE_Y, DTYPE_Z> op;
-    op.Init(x,indice,values,tiling_data.lx,tiling_data.ly,tiling_data.lz,tiling_data.blockNum,tiling_data.ubSize,tiling.dim,tiling.dimNum);
+    op.Init(x,indice,values,tiling_data.lx,tiling_data.ly,tiling_data.lz,
+    tiling_data.dim,tiling_data.dimNum,tiling_data.tileDataNum,tiling_data.tileNum,tiling_data.tailLength,tiling_data.stride);
     op.process();
 }
