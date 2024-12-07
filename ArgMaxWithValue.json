@@ -1,0 +1,70 @@
+[
+    {
+        "op": "ArgMaxWithValue",
+        "input_desc": [
+            {
+                "name": "x",
+                "param_type": "required",
+                "format": [
+                    "ND",
+                    "ND",
+                    "ND",
+                    "ND"
+                ],
+                "type": [
+                    "float",
+                    "float16",
+                    "int32",
+                    "uint8"
+                ]
+            }
+        ],
+        "output_desc": [
+            {
+                "name": "indice",
+                "param_type": "required",
+                "format": [
+                    "ND",
+                    "ND",
+                    "ND",
+                    "ND"
+                ],
+                "type": [
+                    "float",
+                    "float16",
+                    "int32",
+                    "uint8"
+                ]
+            },
+            {
+                "name": "values",
+                "param_type": "required",
+                "format": [
+                    "ND",
+                    "ND",
+                    "ND",
+                    "ND"
+                ],
+                "type": [
+                    "float",
+                    "float16",
+                    "int32",
+                    "uint8"
+                ]
+            }
+        ],
+        "attr": [
+            {
+                "name": "dimension",
+                "param_type": "required",
+                "type": "int"
+            },
+            {
+                "name": "keep_dims",
+                "param_type": "optional",
+                "type": "bool",
+                "default_value": 0
+            }
+        ]
+    }
+]
