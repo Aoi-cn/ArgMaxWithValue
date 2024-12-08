@@ -1,5 +1,5 @@
 #include "kernel_operator.h"
-
+constexpr int32_t BUFFER_NUM = 2;
 template<typename TYPE_X,typename TYPE_Y,typename TYPE_Z> class KernelSArg {
 public:
     __aicore__ inline KernelArg() {}
@@ -43,7 +43,8 @@ public:
 
 
         pipe.InitBuffer(inQueueX,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_X));
-        pipe.InitBuffer(outQueueY,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_Y));
+        pipe.InitBuffer(outQueueIndice,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_Y));
+        pipe.InitBuffer(outQueueValues,BUFFER_NUM,this->tileDataNum*sizeof(TYPE_Z));
         pipe.InitBuffer(tmpBuffer1,this->tileDataNum*sizeof(TYPE_X));
         pipe.InitBuffer(tmpBuffer2,this->tileDataNum*sizeof(TYPE_X));
         pipe.InitBuffer(tmpBuffer3,this->tileDataNum*sizeof(TYPE_X));
@@ -55,20 +56,25 @@ public:
         //考生补充对“loopCount”的定义，注意对Tiling的处理
 
         int32_t loopCount1=this->this->lx*this->ly*this->lz/this->dimNum;
-        int32_t loopCount2=this->tileNum*BUFFER_NUM;
-        for (int32_t i = 0; i < loopCount; i++) {
-            CopyIn(i);
-            Compute(i);
-            CopyOut(i);
-        }
+        int32_t loopCount2=this->tileNum;
+        this->processDataNum=this->tileDataNum;
+        for (int32_t i = 0; i < loopCount1; i++) {
+            for(int32_t j=0;j<loopCount2;j++){
+                if(j==loopCount2-1){
+                    this->processDataNum=this->tailLength;
+                }
+                CopyIn(i,j);
+                Compute(i,j);
+                CopyOut(i,j);
+            }
     }
 
 private:
-    __aicore__ inline void CopyIn(int32_t progress)
+    __aicore__ inline void CopyIn(int32_t progress,int32_t tileProgress)
     {
         //考生补充算子代码
         LocalTensor<TYPE_X> xLocal=inQueueX.AllocTensor<TYPE_X>();
-        DataCopy(xLocal,xGm[progress*this->tileLength],this->tileLength);
+        DataCopy(xLocal,xGm[progress*this->tileDataNum*sizeof(TYPE_X)],this->tileLength);
         inQueueX.EnQue(xLocal);
     }
     __aicore__ inline void Compute(int32_t progress)
@@ -122,6 +128,7 @@ private:
     uint32_t tileNum;
     uint32_t tailLength;
     uint32_t stride;
+    uint32_t processDataNum;
     // uint32_t tileNum;
     // uint32_t tileLength;
 };

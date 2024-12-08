@@ -27,7 +27,7 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
   tiling.set_lz(1);
   tiling.set_ubSize(ubSize);
   tiling.set_dim(dim);
-  uint32_t reduceNum=0;
+  uint32_t reduceNum=1;
   const gert::StorageShape* x1_shape = context->GetInputShape(0);
   int32_t data_sz = 1;
   for (int i = 0; i < x1_shape->GetStorageShape().GetDimNum(); i++){
@@ -45,8 +45,10 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
         tiling.set_lz(x1_shape->GetStorageShape().GetDim(i));
     }
     if(i==dim){
-        reduceNum=x1_shape->GetStorageShape().GetDim(i);
         tiling.set_dimNum(x1_shape->GetStorageShape().GetDim(i));
+    }
+    if(i<x1_shape->GetStorageShape().GetDimNum()-1){
+        reduceNum*=x1_shape->GetStorageShape().GetDim(i);
     }
   }
   uint32_t ubDataNumber=(typeLength==1)?4:3;
