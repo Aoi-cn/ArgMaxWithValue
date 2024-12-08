@@ -67,6 +67,7 @@ public:
                 Compute(i,j);
                 CopyOut(i,j);
             }
+        }
     }
 
 private:
